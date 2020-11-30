@@ -223,4 +223,32 @@ contract TokenImpl is ERC20, Mintable, Burnable, Pausable, Blacklistable, Whitel
 
         return true;
     }
+
+    /**
+     * @dev Transfer tokens from the given `from` account, if it's blacklisted, to the given `to` account.
+     * This function calls `Blacklistable_transferFromBlacklisted` for emitting the TransferFromBlacklisted event.
+     * This function calls `ERC20._transfer()` for transfer logic, and emitting the Transfer event.
+     * Callable by an account with the owner role.
+     *
+     * @param from The account tokens are being transferred from, which must be blacklisted
+     * @param to The account the tokens are being transferred to
+     * @param value The amount of tokens being transferred
+     */
+    function transferFromBlacklisted(address from, address to, uint256 value)
+        external
+        whenNotPaused
+        onlyOwner
+        notBlacklisted(msg.sender)
+        blacklisted(from)
+        notBlacklisted(to)
+        returns (bool)
+    {
+        // Emit TransferFromBlacklisted event
+        Blacklistable._transferFromBlacklisted(msg.sender, from, to, value);
+
+        // Execute the transfer and emit a Transfer event
+        ERC20._transfer(from, to, value);
+
+        return true;
+    }
 }

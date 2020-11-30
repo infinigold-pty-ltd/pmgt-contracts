@@ -18,6 +18,19 @@ contract Blacklistable is OwnerRole {
     /** Event emitted whenever the address of the AddressList contract is updated. */
     event BlacklistUpdated(address indexed previousBlacklist, address indexed newBlacklist);
 
+    /** Event emitted whenever tokens are transferred from a blacklisted account to another. */
+    event TransferFromBlacklisted(address indexed sender, address indexed from, address indexed to, uint256 value);
+
+    /**
+     * @dev Modifier to make a function callable only when the given `account` is blacklisted.
+     *
+     * @param account The account address to check
+     */
+    modifier blacklisted(address account) {
+        require(_blacklist.onList(account));
+        _;
+    }
+
     /**
      * @dev Modifier to make a function callable only when the given `account` is NOT blacklisted.
      *
@@ -76,5 +89,24 @@ contract Blacklistable is OwnerRole {
         require(Address.isContract(newBlacklist));
         emit BlacklistUpdated(address(_blacklist), newBlacklist);
         _blacklist = AddressList(newBlacklist);
+    }
+
+    /**
+     * @dev Internal function that should be called whenever tokens are transferred from a blacklisted account.
+     * Emits a TransferFromBlacklisted event.
+     *
+     * @param sender The account that is initiating the transfer
+     * @param from The blacklisted account tokens are being transferred from
+     * @param to The account the tokens are being transferred to
+     * @param value The amount of tokens being transferred
+     */
+    function _transferFromBlacklisted(address sender, address from, address to, uint256 value) internal {
+        // Assert that the from and to address are not the null account and that the value is greater than zero
+        require(from != address(0));
+        require(to != address(0));
+        require(value > 0);
+
+        // Emit the TransferFromBlacklisted event
+        emit TransferFromBlacklisted(sender, from, to, value);
     }
 }
